@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>FESTSPHERE Staff Scanner</title>
+
+  <!-- QR SCANNER LIBRARY -->
+  <script
+    src="https://unpkg.com/html5-qrcode"
+    type="text/javascript">
+  </script>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #0b0b0b;
+      color: white;
+      font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+    }
+
+    /* =========================
+       HEADER
+    ========================= */
+
+    .header {
+      background:
+        linear-gradient(
+          135deg,
+          #6e132b,
+          #8f2340
+        );
+
+      padding: 22px 15px;
+
+      text-align: center;
+
+      box-shadow:
+        0 5px 25px
+        rgba(0,0,0,.35);
+    }
+
+    .header h1 {
+      margin: 0;
+
+      font-size: 25px;
+
+      letter-spacing: 2px;
+
+      font-weight: 800;
+    }
+
+    .header p {
+      margin: 7px 0 0;
+
+      font-size: 13px;
+
+      opacity: .85;
+    }
+
+    /* =========================
+       CONTAINER
+    ========================= */
+
+    .container {
+      width: 100%;
+
+      max-width: 520px;
+
+      margin: auto;
+
+      padding:
+        20px 15px 40px;
+    }
+
+    /* =========================
+       CARD
+    ========================= */
+
+    .card {
+      background: #171717;
+
+      border:
+        1px solid #292929;
+
+      border-radius: 18px;
+
+      padding: 18px;
+
+      margin-bottom: 15px;
+
+      box-shadow:
+        0 8px 30px
+        rgba(0,0,0,.35);
+    }
+
+    /* =========================
+       LOGIN
+    ========================= */
+
+    #loginScreen {
+      display: block;
+    }
+
+    #scannerScreen {
+      display: none;
+    }
+
+    .login-title {
+      text-align: center;
+
+      font-size: 21px;
+
+      font-weight: 800;
+
+      margin-bottom: 8px;
+    }
+
+    .login-subtitle {
+      text-align: center;
+
+      color: #999;
+
+      font-size: 13px;
+
+      margin-bottom: 22px;
+    }
+
+    .pin-input {
+      width: 100%;
+
+      padding: 16px;
+
+      border-radius: 12px;
+
+      border:
+        1px solid #3b3b3b;
+
+      background: #0d0d0d;
+
+      color: white;
+
+      font-size: 22px;
+
+      text-align: center;
+
+      letter-spacing: 8px;
+
+      outline: none;
+    }
+
+    .pin-input:focus {
+      border-color: #8f2340;
+    }
+
+    /* =========================
+       BUTTONS
+    ========================= */
+
+    button {
+      width: 100%;
+
+      border: 0;
+
+      border-radius: 11px;
+
+      padding: 15px;
+
+      margin-top: 11px;
+
+      font-size: 16px;
+
+      font-weight: 800;
+
+      cursor: pointer;
+
+      background: #8f2340;
+
+      color: white;
+
+      transition: .2s;
+    }
+
+    button:active {
+      transform: scale(.98);
+    }
+
+    button.secondary {
+      background: #292929;
+    }
+
+    button.logout {
+      background: #242424;
+
+      color: #bbb;
+    }
+
+    /* =========================
+       READER
+    ========================= */
+
+    #reader {
+      width: 100%;
+
+      overflow: hidden;
+
+      border-radius: 14px;
+
+      background: #000;
+
+      min-height: 250px;
+    }
+
+    #reader video {
+      border-radius: 14px;
+    }
+
+    .status {
+      text-align: center;
+
+      margin: 15px 0 5px;
+
+      font-size: 14px;
+
+      color: #ddd;
+
+      line-height: 1.5;
+    }
+
+    /* =========================
+       RESULT
+    ========================= */
+
+    #resultBox {
+      display: none;
+
+      border-radius: 14px;
+
+      padding: 18px;
+
+      margin-top: 15px;
+
+      text-align: center;
+    }
+
+    #resultIcon {
+      width: 70px;
+
+      height: 70px;
+
+      margin:
+        0 auto 12px;
+
+      border-radius: 50%;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      font-size: 42px;
+
+      font-weight: 900;
+    }
+
+    #resultTitle {
+      font-size: 24px;
+
+      font-weight: 900;
+
+      margin-bottom: 7px;
+    }
+
+    #resultMessage {
+      font-size: 16px;
+
+      font-weight: 700;
+
+      margin-bottom: 12px;
+    }
+
+    #resultInfo {
+      font-size: 14px;
+
+      line-height: 1.7;
+
+      color: #ccc;
+    }
+
+    .valid-result {
+      background:
+        rgba(22,163,74,.12);
+
+      border:
+        1px solid
+        rgba(22,163,74,.45);
+    }
+
+    .valid-result #resultIcon {
+      background: #16a34a;
+    }
+
+    .valid-result #resultTitle {
+      color: #38d98a;
+    }
+
+    .used-result,
+    .invalid-result {
+      background:
+        rgba(220,38,38,.12);
+
+      border:
+        1px solid
+        rgba(220,38,38,.45);
+    }
+
+    .used-result #resultIcon,
+    .invalid-result #resultIcon {
+      background: #dc2626;
+    }
+
+    .used-result #resultTitle,
+    .invalid-result #resultTitle {
+      color: #ff5757;
+    }
+
+    /* =========================
+       COUNTERS
+    ========================= */
+
+    .counters {
+      display: grid;
+
+      grid-template-columns:
+        1fr 1fr;
+
+      gap: 12px;
+    }
+
+    .counter {
+      text-align: center;
+
+      padding: 17px;
+
+      border-radius: 13px;
+
+      background: #242424;
+    }
+
+    .counter-number {
+      font-size: 31px;
+
+      font-weight: 900;
+    }
+
+    .counter-label {
+      font-size: 11px;
+
+      color: #999;
+
+      margin-top: 5px;
+
+      letter-spacing: .5px;
+    }
+
+    .approved {
+      color: #38d98a;
+    }
+
+    .rejected {
+      color: #ff5757;
+    }
+
+    /* =========================
+       MANUAL
+    ========================= */
+
+    .manual-title {
+      font-size: 15px;
+
+      margin-bottom: 8px;
+
+      font-weight: 800;
+    }
+
+    .manual-input {
+      width: 100%;
+
+      padding: 14px;
+
+      border-radius: 10px;
+
+      border:
+        1px solid #444;
+
+      background: #0e0e0e;
+
+      color: white;
+
+      font-size: 14px;
+
+      outline: none;
+    }
+
+    /* =========================
+       STAFF INFO
+    ========================= */
+
+    .staff-bar {
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      background: #202020;
+
+      border-radius: 11px;
+
+      padding: 12px 14px;
+
+      margin-bottom: 15px;
+    }
+
+    .staff-status {
+      font-size: 13px;
+
+      color: #aaa;
+    }
+
+    .online {
+      color: #38d98a;
+
+      font-weight: 800;
+    }
+
+    /* =========================
+       LOADING
+    ========================= */
+
+    .loading {
+      text-align: center;
+
+      color: #aaa;
+
+      font-size: 14px;
+
+      padding: 10px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .note {
+      text-align: center;
+
+      font-size: 11px;
+
+      color: #666;
+
+      margin-top: 18px;
+
+      line-height: 1.5;
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+<!-- ==================================================
+     HEADER
+================================================== -->
+
+<div class="header">
+
+  <h1>FESTSPHERE</h1>
+
+  <p>
+    Official Staff Ticket Scanner
+  </p>
+
+</div>
+
+
+<div class="container">
+
+
+<!-- ==================================================
+     LOGIN SCREEN
+================================================== -->
+
+<div id="loginScreen">
+
+  <div class="card">
+
+    <div class="login-title">
+      Staff Login
+    </div>
+
+    <div class="login-subtitle">
+      Enter your 6-digit Staff PIN
+    </div>
+
+    <input
+      id="pinInput"
+      class="pin-input"
+      type="password"
+      inputmode="numeric"
+      maxlength="6"
+      placeholder="••••••"
+    >
+
+    <button
+      onclick="loginStaff()">
+      LOGIN
+    </button>
+
+    <div
+      id="loginStatus"
+      class="status">
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ==================================================
+     SCANNER SCREEN
+================================================== -->
+
+<div id="scannerScreen">
+
+
+  <!-- STAFF STATUS -->
+
+  <div class="staff-bar">
+
+    <div class="staff-status">
+
+      Staff Session:
+      <span class="online">
+        ACTIVE
+      </span>
+
+    </div>
+
+    <button
+      class="logout"
+      onclick="logoutStaff()"
+      style="
+        width:auto;
+        margin:0;
+        padding:8px 13px;
+        font-size:12px;
+      ">
+      LOGOUT
+    </button>
+
+  </div>
+
+
+  <!-- CAMERA -->
+
+  <div class="card">
+
+    <div id="reader"></div>
+
+    <div
+      id="status"
+      class="status">
+
+      Camera ready —
+      press START CAMERA
+
+    </div>
+
+
+    <button
+      id="startBtn"
+      onclick="startCamera()">
+
+      START CAMERA
+
+    </button>
+
+
+    <button
+      id="stopBtn"
+      onclick="stopCamera()"
+      class="secondary"
+      style="display:none;">
+
+      STOP CAMERA
+
+    </button>
+
+
+    <!-- RESULT -->
+
+    <div
+      id="resultBox">
+
+      <div id="resultIcon">
+      </div>
+
+      <div id="resultTitle">
+      </div>
+
+      <div id="resultMessage">
+      </div>
+
+      <div id="resultInfo">
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- MANUAL TOKEN -->
+
+  <div class="card">
+
+    <div class="manual-title">
+
+      Manual Ticket Verification
+
+    </div>
+
+    <input
+      type="text"
+      id="tokenInput"
+      class="manual-input"
+      placeholder="Paste ticket QR URL or token"
+    >
+
+    <button
+      onclick="verifyManual()">
+
+      VERIFY TICKET
+
+    </button>
+
+  </div>
+
+
+  <!-- COUNTERS -->
+
+  <div class="card">
+
+    <div class="counters">
+
+
+      <div class="counter">
+
+        <div
+          class="counter-number approved"
+          id="approvedCount">
+
+          0
+
+        </div>
+
+        <div class="counter-label">
+
+          ENTRY APPROVED
+
+        </div>
+
+      </div>
+
+
+      <div class="counter">
+
+        <div
+          class="counter-number rejected"
+          id="rejectedCount">
+
+          0
+
+        </div>
+
+        <div class="counter-label">
+
+          DENIED / USED
+
+        </div>
+
+      </div>
+
+
+    </div>
+
+  </div>
+
+
+  <div class="note">
+
+    FESTSPHERE Official Staff Scanner<br>
+
+    Every approved ticket is automatically marked USED.
+
+  </div>
+
+
+</div>
+
+
+</div>
+
+
+<script>
+
+
+/* ==================================================
+   CONFIGURATION
+================================================== */
+
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbxVxZMzGtZdLSWp5LBzMHw7aCfy8MtMCwtJzXKPjjKetj8gZhala5n00omoQYmI8eTbZA/exec";
+
+
+/* ==================================================
+   GLOBAL VARIABLES
+================================================== */
+
+let scanner = null;
+
+let scanning = false;
+
+let processing = false;
+
+let sessionToken =
+  localStorage.getItem(
+    "fs_staff_session"
+  ) || "";
+
+
+let approved =
+  Number(
+    localStorage.getItem(
+      "fs_approved"
+    ) || 0
+  );
+
+
+let rejected =
+  Number(
+    localStorage.getItem(
+      "fs_rejected"
+    ) || 0
+  );
+
+
+/* ==================================================
+   INITIALIZE
+================================================== */
+
+document
+  .getElementById(
+    "approvedCount"
+  )
+  .textContent = approved;
+
+
+document
+  .getElementById(
+    "rejectedCount"
+  )
+  .textContent = rejected;
+
+
+/* ==================================================
+   AUTO LOGIN IF SESSION EXISTS
+================================================== */
+
+if (sessionToken) {
+
+  showScanner();
+
+}
+
+
+/* ==================================================
+   STAFF LOGIN
+================================================== */
+
+function loginStaff() {
+
+  const pin =
+    document
+      .getElementById(
+        "pinInput"
+      )
+      .value
+      .trim();
+
+
+  if (!/^\d{6}$/.test(pin)) {
+
+    document
+      .getElementById(
+        "loginStatus"
+      )
+      .textContent =
+        "Please enter a valid 6-digit PIN.";
+
+    return;
+  }
+
+
+  document
+    .getElementById(
+      "loginStatus"
+    )
+    .textContent =
+      "Logging in...";
+
+
+  const callbackName =
+    createCallbackName();
+
+
+  const url =
+    API_URL +
+    "?action=login" +
+    "&pin=" +
+    encodeURIComponent(pin) +
+    "&callback=" +
+    callbackName;
+
+
+  jsonp(
+    url,
+    callbackName,
+    function(result) {
+
+
+      if (
+        result &&
+        result.ok &&
+        result.sessionToken
+      ) {
+
+        sessionToken =
+          result.sessionToken;
+
+
+        localStorage.setItem(
+          "fs_staff_session",
+          sessionToken
+        );
+
+
+        document
+          .getElementById(
+            "pinInput"
+          )
+          .value = "";
+
+
+        document
+          .getElementById(
+            "loginStatus"
+          )
+          .textContent = "";
+
+
+        showScanner();
+
+      } else {
+
+        document
+          .getElementById(
+            "loginStatus"
+          )
+          .textContent =
+            result &&
+            result.message
+              ? result.message
+              : "Login failed.";
+
+      }
+
+    }
+  );
+
+}
+
+
+/* ==================================================
+   SHOW SCANNER
+================================================== */
+
+function showScanner() {
+
+  document
+    .getElementById(
+      "loginScreen"
+    )
+    .style.display =
+      "none";
+
+
+  document
+    .getElementById(
+      "scannerScreen"
+    )
+    .style.display =
+      "block";
+
+}
+
+
+/* ==================================================
+   LOGOUT
+================================================== */
+
+function logoutStaff() {
+
+  stopCamera();
+
+
+  sessionToken = "";
+
+
+  localStorage.removeItem(
+    "fs_staff_session"
+  );
+
+
+  document
+    .getElementById(
+      "scannerScreen"
+    )
+    .style.display =
+      "none";
+
+
+  document
+    .getElementById(
+      "loginScreen"
+    )
+    .style.display =
+      "block";
+
+
+  document
+    .getElementById(
+      "loginStatus"
+    )
+    .textContent = "";
+
+}
+
+
+/* ==================================================
+   START CAMERA
+================================================== */
+
+function startCamera() {
+
+  if (scanning || processing) {
+
+    return;
+
+  }
+
+
+  if (!sessionToken) {
+
+    alert(
+      "Please login first."
+    );
+
+    return;
+
+  }
+
+
+  if (scanner) {
+
+    try {
+
+      scanner.clear();
+
+    } catch (e) {}
+
+  }
+
+
+  scanner =
+    new Html5Qrcode(
+      "reader"
+    );
+
+
+  const config = {
+
+    fps: 10,
+
+    qrbox:
+      function(
+        width,
+        height
+      ) {
+
+        const size =
+          Math.floor(
+            Math.min(
+              width,
+              height
+            ) * 0.75
+          );
+
+
+        return {
+
+          width: size,
+
+          height: size
+
+        };
+
+      },
+
+    aspectRatio: 1.0
+
+  };
+
+
+  scanner
+    .start(
+
+      {
+        facingMode:
+          "environment"
+      },
+
+      config,
+
+      function(decodedText) {
+
+        if (
+          decodedText &&
+          !processing
+        ) {
+
+          handleScan(
+            decodedText
+          );
+
+        }
+
+      },
+
+      function(errorMessage) {
+
+        /*
+
+          Normal scanner
+          frame errors are ignored.
+
+        */
+
+      }
+
+    )
+
+    .then(
+      function() {
+
+        scanning = true;
+
+
+        document
+          .getElementById(
+            "status"
+          )
+          .textContent =
+            "CAMERA ACTIVE — Scan ticket QR";
+
+
+        document
+          .getElementById(
+            "startBtn"
+          )
+          .style.display =
+            "none";
+
+
+        document
+          .getElementById(
+            "stopBtn"
+          )
+          .style.display =
+            "block";
+
+      }
+
+    )
+
+    .catch(
+      function(error) {
+
+        console.error(
+          error
+        );
+
+
+        scanning = false;
+
+
+        document
+          .getElementById(
+            "status"
+          )
+          .textContent =
+            "CAMERA ERROR — Please allow camera permission.";
+
+
+        alert(
+          "Camera could not start.\n\n" +
+          "Make sure this page is opened through HTTPS and camera permission is allowed."
+        );
+
+      }
+
+    );
+
+}
+
+
+/* ==================================================
+   STOP CAMERA
+================================================== */
+
+function stopCamera() {
+
+  if (
+    !scanner ||
+    !scanning
+  ) {
+
+    return;
+
+  }
+
+
+  scanner
+    .stop()
+
+    .then(
+      function() {
+
+        scanning = false;
+
+
+        document
+          .getElementById(
+            "status"
+          )
+          .textContent =
+            "Camera stopped";
+
+
+        document
+          .getElementById(
+            "startBtn"
+          )
+          .style.display =
+            "block";
+
+
+        document
+          .getElementById(
+            "stopBtn"
+          )
+          .style.display =
+            "none";
+
+      }
+    )
+
+    .catch(
+      function(error) {
+
+        console.error(
+          error
+        );
+
+        scanning = false;
+
+      }
+    );
+
+}
+
+
+/* ==================================================
+   HANDLE QR SCAN
+================================================== */
+
+function handleScan(
+  decodedText
+) {
+
+  if (processing) {
+
+    return;
+
+  }
+
+
+  processing = true;
+
+
+  stopCamera();
+
+
+  const token =
+    extractToken(
+      decodedText
+    );
+
+
+  if (!token) {
+
+    processing = false;
+
+
+    showResult(
+      "INVALID",
+      "INVALID QR",
+      "This QR code is not a Festsphere ticket.",
+      ""
+    );
+
+
+    rejected++;
+
+
+    saveCounters();
+
+
+    restartCameraLater();
+
+    return;
+
+  }
+
+
+  document
+    .getElementById(
+      "status"
+    )
+    .textContent =
+      "VERIFYING TICKET...";
+
+
+  redeemTicket(
+    token
+  );
+
+}
+
+
+/* ==================================================
+   EXTRACT TOKEN
+================================================== */
+
+function extractToken(
+  value
+) {
+
+  const text =
+    String(
+      value || ""
+    ).trim();
+
+
+  if (!text) {
+
+    return "";
+
+  }
+
+
+  /*
+
+    If QR contains full URL:
+    ?token=XXXX
+
+  */
+
+  try {
+
+    const url =
+      new URL(text);
+
+
+    const token =
+      url.searchParams.get(
+        "token"
+      );
+
+
+    if (token) {
+
+      return token.trim();
+
+    }
+
+  } catch (error) {
+
+    /*
+
+      Not a URL.
+      Treat it as raw token.
+
+    */
+
+  }
+
+
+  /*
+
+    Backup extraction.
+
+  */
+
+  const match =
+    text.match(
+      /[?&]token=([^&]+)/i
+    );
+
+
+  if (match) {
+
+    try {
+
+      return decodeURIComponent(
+        match[1]
+      ).trim();
+
+    } catch (error) {
+
+      return match[1].trim();
+
+    }
+
+  }
+
+
+  /*
+    Raw token.
+  */
+
+  return text;
+
+}
+
+
+/* ==================================================
+   REDEEM TICKET
+================================================== */
+
+function redeemTicket(
+  token
+) {
+
+  if (!sessionToken) {
+
+    processing = false;
+
+    alert(
+      "Staff session expired. Please login again."
+    );
+
+    logoutStaff();
+
+    return;
+
+  }
+
+
+  const callbackName =
+    createCallbackName();
+
+
+  const url =
+    API_URL +
+    "?action=redeem" +
+    "&token=" +
+    encodeURIComponent(token) +
+    "&session=" +
+    encodeURIComponent(
+      sessionToken
+    ) +
+    "&callback=" +
+    callbackName;
+
+
+  jsonp(
+    url,
+    callbackName,
+    function(result) {
+
+
+      processing = false;
+
+
+      if (!result) {
+
+        showResult(
+          "INVALID",
+          "VERIFICATION ERROR",
+          "No response received from ticket server.",
+          ""
+        );
+
+
+        rejected++;
+
+
+        saveCounters();
+
+
+        restartCameraLater();
+
+        return;
+
+      }
+
+
+      /* =========================================
+         VALID / APPROVED
+      ========================================= */
+
+      if (
+        result.status === "VALID" &&
+        result.valid === true
+      ) {
+
+        approved++;
+
+
+        saveCounters();
+
+
+        showResult(
+          "VALID",
+          "VALID TICKET",
+          "ENTRY APPROVED",
+          "Ticket ID: " +
+            escapeHtml(
+              result.ticketId
+            ) +
+            "<br>" +
+            "Name: " +
+            escapeHtml(
+              result.name
+            )
+        );
+
+
+        restartCameraLater();
+
+        return;
+
+      }
+
+
+      /* =========================================
+         ALREADY USED
+      ========================================= */
+
+      if (
+        result.status === "USED"
+      ) {
+
+        rejected++;
+
+
+        saveCounters();
+
+
+        showResult(
+          "USED",
+          "TICKET ALREADY USED",
+          "ENTRY DENIED",
+          "Ticket ID: " +
+            escapeHtml(
+              result.ticketId
+            ) +
+            "<br>" +
+            "Name: " +
+            escapeHtml(
+              result.name
+            )
+        );
+
+
+        restartCameraLater();
+
+        return;
+
+      }
+
+
+      /* =========================================
+         UNAUTHORIZED
+      ========================================= */
+
+      if (
+        result.status ===
+        "UNAUTHORIZED"
+      ) {
+
+        alert(
+          "Staff session expired.\nPlease login again."
+        );
+
+
+        logoutStaff();
+
+        return;
+
+      }
+
+
+      /* =========================================
+         INVALID / OTHER
+      ========================================= */
+
+      rejected++;
+
+
+      saveCounters();
+
+
+      showResult(
+        "INVALID",
+        "INVALID TICKET",
+        result.message ||
+          "This ticket could not be verified.",
+        result.ticketId
+          ? "Ticket ID: " +
+            escapeHtml(
+              result.ticketId
+            )
+          : ""
+      );
+
+
+      restartCameraLater();
+
+    }
+  );
+
+}
+
+
+/* ==================================================
+   MANUAL VERIFICATION
+================================================== */
+
+function verifyManual() {
+
+  if (!sessionToken) {
+
+    alert(
+      "Please login first."
+    );
+
+    return;
+
+  }
+
+
+  const input =
+    document
+      .getElementById(
+        "tokenInput"
+      );
+
+
+  const value =
+    input.value.trim();
+
+
+  if (!value) {
+
+    alert(
+      "Please enter a ticket URL or token."
+    );
+
+    return;
+
+  }
+
+
+  const token =
+    extractToken(
+      value
+    );
+
+
+  if (!token) {
+
+    alert(
+      "Invalid ticket token."
+    );
+
+    return;
+
+  }
+
+
+  processing = true;
+
+
+  input.value = "";
+
+
+  document
+    .getElementById(
+      "status"
+    )
+    .textContent =
+      "VERIFYING TICKET...";
+
+
+  redeemTicket(
+    token
+  );
+
+}
+
+
+/* ==================================================
+   SHOW RESULT
+================================================== */
+
+function showResult(
+  type,
+  title,
+  message,
+  info
+) {
+
+  const box =
+    document
+      .getElementById(
+        "resultBox"
+      );
+
+
+  const icon =
+    document
+      .getElementById(
+        "resultIcon"
+      );
+
+
+  const titleEl =
+    document
+      .getElementById(
+        "resultTitle"
+      );
+
+
+  const messageEl =
+    document
+      .getElementById(
+        "resultMessage"
+      );
+
+
+  const infoEl =
+    document
+      .getElementById(
+        "resultInfo"
+      );
+
+
+  box.className = "";
+
+
+  if (type === "VALID") {
+
+    box.classList.add(
+      "valid-result"
+    );
+
+    icon.textContent = "✓";
+
+  }
+
+  else if (type === "USED") {
+
+    box.classList.add(
+      "used-result"
+    );
+
+    icon.textContent = "×";
+
+  }
+
+  else {
+
+    box.classList.add(
+      "invalid-result"
+    );
+
+    icon.textContent = "!";
+
+  }
+
+
+  titleEl.textContent =
+    title;
+
+
+  messageEl.textContent =
+    message;
+
+
+  infoEl.innerHTML =
+    info || "";
+
+
+  box.style.display =
+    "block";
+
+}
+
+
+/* ==================================================
+   HIDE RESULT
+================================================== */
+
+function hideResult() {
+
+  document
+    .getElementById(
+      "resultBox"
+    )
+    .style.display =
+      "none";
+
+}
+
+
+/* ==================================================
+   RESTART CAMERA
+================================================== */
+
+function restartCameraLater() {
+
+  setTimeout(
+    function() {
+
+      hideResult();
+
+
+      if (
+        sessionToken
+      ) {
+
+        startCamera();
+
+      }
+
+    },
+    1800
+  );
+
+}
+
+
+/* ==================================================
+   COUNTERS
+================================================== */
+
+function saveCounters() {
+
+  localStorage.setItem(
+    "fs_approved",
+    approved
+  );
+
+
+  localStorage.setItem(
+    "fs_rejected",
+    rejected
+  );
+
+
+  document
+    .getElementById(
+      "approvedCount"
+    )
+    .textContent =
+      approved;
+
+
+  document
+    .getElementById(
+      "rejectedCount"
+    )
+    .textContent =
+      rejected;
+
+}
+
+
+/* ==================================================
+   JSONP REQUEST
+================================================== */
+
+function jsonp(
+  url,
+  callbackName,
+  callback
+) {
+
+  const script =
+    document.createElement(
+      "script"
+    );
+
+
+  let finished = false;
+
+
+  window[
+    callbackName
+  ] =
+    function(data) {
+
+      if (finished) {
+
+        return;
+
+      }
+
+
+      finished = true;
+
+
+      cleanup();
+
+
+      callback(data);
+
+    };
+
+
+  script.src =
+    url;
+
+
+  script.async = true;
+
+
+  script.onerror =
+    function() {
+
+      if (finished) {
+
+        return;
+
+      }
+
+
+      finished = true;
+
+
+      cleanup();
+
+
+      callback(null);
+
+    };
+
+
+  document
+    .body
+    .appendChild(
+      script
+    );
+
+
+  function cleanup() {
+
+    try {
+
+      delete window[
+        callbackName
+      ];
+
+    } catch (e) {
+
+      window[
+        callbackName
+      ] = undefined;
+
+    }
+
+
+    if (
+      script.parentNode
+    ) {
+
+      script.parentNode.removeChild(
+        script
+      );
+
+    }
+
+  }
+
+}
+
+
+/* ==================================================
+   CALLBACK NAME
+================================================== */
+
+function createCallbackName() {
+
+  return (
+    "fsCallback_" +
+    Date.now() +
+    "_" +
+    Math.floor(
+      Math.random() * 100000
+    )
+  );
+
+}
+
+
+/* ==================================================
+   HTML ESCAPE
+================================================== */
+
+function escapeHtml(
+  value
+) {
+
+  return String(
+    value || ""
+  )
+
+  .replace(
+    /&/g,
+    "&amp;"
+  )
+
+  .replace(
+    /</g,
+    "&lt;"
+  )
+
+  .replace(
+    />/g,
+    "&gt;"
+  )
+
+  .replace(
+    /"/g,
+    "&quot;"
+  )
+
+  .replace(
+    /'/g,
+    "&#039;"
+  );
+
+}
+
+
+/* ==================================================
+   ENTER KEY LOGIN
+================================================== */
+
+document
+  .getElementById(
+    "pinInput"
+  )
+  .addEventListener(
+    "keydown",
+    function(event) {
+
+      if (
+        event.key ===
+        "Enter"
+      ) {
+
+        loginStaff();
+
+      }
+
+    }
+  );
+
+
+</script>
+
+</body>
+
+</html>
