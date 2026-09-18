@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Festsphere Staff Scanner</title>
+  <title>FESTSPHERE Staff Scanner</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
     * {
@@ -14,53 +15,69 @@
 
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      min-height: 100vh;
       background: #111;
       color: white;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .header {
+      background: #7b1830;
+      padding: 22px 15px;
       text-align: center;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 1px;
+    }
+
+    .header p {
+      margin: 6px 0 0;
+      font-size: 13px;
+      opacity: .85;
     }
 
     .container {
       max-width: 520px;
       margin: auto;
-      padding: 20px;
+      padding: 20px 15px 40px;
     }
 
-    h1 {
-      margin-bottom: 5px;
-      font-size: 28px;
-    }
-
-    .subtitle {
-      color: #aaa;
-      margin-bottom: 20px;
+    .card {
+      background: #1d1d1d;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 15px;
+      box-shadow: 0 5px 25px rgba(0,0,0,.35);
     }
 
     #reader {
       width: 100%;
-      background: #000;
-      border-radius: 16px;
       overflow: hidden;
+      border-radius: 12px;
+      background: #000;
+    }
+
+    .status {
+      text-align: center;
+      margin: 15px 0;
+      font-size: 14px;
+      color: #ddd;
     }
 
     button {
       width: 100%;
-      padding: 15px;
-      margin-top: 12px;
-      border: none;
+      border: 0;
       border-radius: 10px;
+      padding: 14px;
+      margin-top: 10px;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
-    }
-
-    .start {
-      background: #ffffff;
-      color: #111;
-    }
-
-    .manual {
-      margin-top: 20px;
+      background: #8f2340;
+      color: white;
     }
 
     input {
@@ -68,641 +85,360 @@
       padding: 14px;
       border-radius: 10px;
       border: 1px solid #444;
-      background: #222;
+      background: #111;
       color: white;
       font-size: 15px;
+      outline: none;
     }
 
-    .verify {
-      background: #444;
-      color: white;
-    }
-
-    #result {
-      margin-top: 20px;
-      padding: 20px;
-      border-radius: 14px;
-      display: none;
-    }
-
-    .valid {
-      display: block !important;
-      background: #123d20;
-      border: 2px solid #24d45b;
-    }
-
-    .used {
-      display: block !important;
-      background: #421414;
-      border: 2px solid #ff4444;
-    }
-
-    .invalid {
-      display: block !important;
-      background: #3c3212;
-      border: 2px solid #ffc107;
-    }
-
-    .result-title {
-      font-size: 25px;
+    .manual-title {
+      font-size: 15px;
+      margin-bottom: 8px;
       font-weight: bold;
-      margin-bottom: 10px;
     }
 
-    .result-message {
-      font-size: 17px;
+    .counters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
 
-    .stats {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .stat {
-      flex: 1;
-      background: #222;
-      padding: 15px;
+    .counter {
+      text-align: center;
+      padding: 16px;
       border-radius: 12px;
+      background: #292929;
     }
 
-    .stat-number {
-      font-size: 25px;
+    .counter-number {
+      font-size: 30px;
       font-weight: bold;
     }
 
-    .stat-label {
+    .counter-label {
+      font-size: 12px;
       color: #aaa;
-      font-size: 13px;
-      margin-top: 5px;
+      margin-top: 4px;
     }
 
-    .logout {
-      background: #222;
-      color: #ff7777;
-      margin-top: 20px;
+    .approved {
+      color: #38d98a;
     }
 
-    #status {
-      margin: 15px 0;
-      color: #aaa;
-      font-size: 14px;
+    .rejected {
+      color: #ff5757;
+    }
+
+    .note {
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+      margin-top: 18px;
+      line-height: 1.5;
     }
   </style>
 </head>
 
 <body>
 
-<div class="container">
-
-  <h1>FESTSPHERE</h1>
-  <div class="subtitle">Staff Ticket Scanner</div>
-
-  <div id="status">
-    Ready to scan
+  <div class="header">
+    <h1>FESTSPHERE</h1>
+    <p>Staff Ticket Scanner</p>
   </div>
 
-  <div id="reader"></div>
+  <div class="container">
 
-  <button class="start" onclick="startScanner()">
-    📷 START CAMERA
-  </button>
+    <div class="card">
 
-  <div class="manual">
+      <div id="reader"></div>
 
-    <input
-      id="manualToken"
-      type="text"
-      placeholder="Paste QR URL or ticket token"
-    >
+      <div class="status" id="status">
+        Camera ready — press START CAMERA
+      </div>
 
-    <button class="verify" onclick="verifyManual()">
-      VERIFY MANUALLY
-    </button>
+      <button id="startBtn" onclick="startCamera()">
+        START CAMERA
+      </button>
 
-  </div>
+      <button
+        id="stopBtn"
+        onclick="stopCamera()"
+        style="display:none;">
+        STOP CAMERA
+      </button>
 
-  <div id="result">
-    <div id="resultTitle" class="result-title"></div>
-    <div id="resultMessage" class="result-message"></div>
-  </div>
-
-  <div class="stats">
-
-    <div class="stat">
-      <div id="approved" class="stat-number">0</div>
-      <div class="stat-label">APPROVED</div>
     </div>
 
-    <div class="stat">
-      <div id="rejected" class="stat-number">0</div>
-      <div class="stat-label">REJECTED</div>
+    <div class="card">
+
+      <div class="manual-title">
+        Manual Ticket Token
+      </div>
+
+      <input
+        type="text"
+        id="tokenInput"
+        placeholder="Paste ticket QR URL">
+
+      <button onclick="verifyManual()">
+        VERIFY MANUALLY
+      </button>
+
+    </div>
+
+    <div class="card">
+
+      <div class="counters">
+
+        <div class="counter">
+          <div
+            class="counter-number approved"
+            id="approvedCount">
+            0
+          </div>
+
+          <div class="counter-label">
+            SCANNED
+          </div>
+        </div>
+
+        <div class="counter">
+          <div
+            class="counter-number rejected"
+            id="rejectedCount">
+            0
+          </div>
+
+          <div class="counter-label">
+            REJECTED / USED
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="note">
+      FESTSPHERE Official Staff Scanner
     </div>
 
   </div>
-
-  <button class="logout" onclick="logout()">
-    LOG OUT
-  </button>
-
-</div>
 
 
 <script>
 
-const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbxVxZMzGtZdLSWp5LBzMHw7aCfy8MtMCwtJzXKPjjKetj8gZhala5n00omoQYmI8eTbZA/exec";
-
-
-const params = new URLSearchParams(window.location.search);
-
-const sessionToken = params.get("session");
-
-
 let scanner = null;
 let scanning = false;
 
-let approvedCount = 0;
-let rejectedCount = 0;
+let approved = Number(
+  localStorage.getItem("fs_approved") || 0
+);
 
-let lastScanned = "";
-let lastScanTime = 0;
+let rejected = Number(
+  localStorage.getItem("fs_rejected") || 0
+);
 
-
-/* =========================
-   CHECK SESSION
-========================= */
-
-if (!sessionToken) {
-
-  document.getElementById("status").innerText =
-    "No staff session found.";
-
-}
+document.getElementById("approvedCount").textContent = approved;
+document.getElementById("rejectedCount").textContent = rejected;
 
 
-/* =========================
-   START CAMERA
-========================= */
-
-async function startScanner() {
-
-  if (!sessionToken) {
-
-    showResult(
-      "invalid",
-      "SESSION ERROR",
-      "Please login again."
-    );
-
-    return;
-  }
+function startCamera() {
 
   if (scanning) {
     return;
   }
 
-  document.getElementById("status").innerText =
-    "Starting camera...";
+  scanner = new Html5Qrcode("reader");
 
-  try {
+  const config = {
+    fps: 10,
 
-    scanner = new Html5Qrcode("reader");
+    qrbox: function(width, height) {
 
-    await scanner.start(
+      const size = Math.floor(
+        Math.min(width, height) * 0.75
+      );
 
-      {
-        facingMode: {
-          ideal: "environment"
-        }
-      },
+      return {
+        width: size,
+        height: size
+      };
+    },
 
-      {
-        fps: 10,
+    aspectRatio: 1.0
+  };
 
-        qrbox: {
-          width: 280,
-          height: 280
-        },
 
-        aspectRatio: 1.0
+  scanner.start(
+    {
+      facingMode: "environment"
+    },
 
-      },
+    config,
 
-      onScanSuccess,
+    function(decodedText) {
 
-      onScanFailure
+      if (decodedText) {
+        handleScan(decodedText);
+      }
 
-    );
+    },
+
+    function(errorMessage) {
+      // Normal QR scanning errors are ignored.
+    }
+
+  ).then(function() {
 
     scanning = true;
 
-    document.getElementById("status").innerText =
-      "Camera active — scan ticket QR";
+    document.getElementById("status").textContent =
+      "CAMERA ACTIVE — Scan ticket QR";
 
-  }
+    document.getElementById("startBtn").style.display =
+      "none";
 
-  catch (error) {
+    document.getElementById("stopBtn").style.display =
+      "block";
+
+  }).catch(function(error) {
 
     console.error(error);
 
-    document.getElementById("status").innerText =
-      "Camera could not start.";
+    document.getElementById("status").textContent =
+      "CAMERA ERROR — Allow camera permission.";
 
-    showResult(
-      "invalid",
-      "CAMERA ERROR",
-      "Allow camera permission and try again."
+    alert(
+      "Camera could not start.\n\n" +
+      "Please allow camera permission and reload this page."
     );
 
-  }
-
+  });
 }
 
 
-/* =========================
-   QR SUCCESS
-========================= */
+function stopCamera() {
 
-function onScanSuccess(decodedText) {
+  if (!scanner || !scanning) {
+    return;
+  }
 
-  const now = Date.now();
+  scanner.stop()
+    .then(function() {
 
-  /*
-    Prevent the same QR from being
-    submitted repeatedly within 3 seconds.
-  */
+      scanning = false;
+
+      document.getElementById("status").textContent =
+        "Camera stopped";
+
+      document.getElementById("startBtn").style.display =
+        "block";
+
+      document.getElementById("stopBtn").style.display =
+        "none";
+
+    })
+    .catch(function(error) {
+
+      console.error(error);
+
+    });
+}
+
+
+function handleScan(decodedText) {
+
+  stopCamera();
+
+  const url = decodedText.trim();
 
   if (
-    decodedText === lastScanned &&
-    now - lastScanTime < 3000
+    url.indexOf("action=scan") === -1 &&
+    url.indexOf("token=") === -1
   ) {
+
+    rejected++;
+
+    localStorage.setItem(
+      "fs_rejected",
+      rejected
+    );
+
+    document.getElementById("rejectedCount").textContent =
+      rejected;
+
+    document.getElementById("status").textContent =
+      "INVALID QR";
+
+    setTimeout(function() {
+      startCamera();
+    }, 1800);
+
     return;
   }
 
-  lastScanned = decodedText;
-  lastScanTime = now;
 
-  verifyTicket(decodedText);
+  /*
+    Open existing Apps Script verification page.
+    Scanner stays open in this tab.
+  */
 
-}
-
-
-/* =========================
-   QR FAILURE
-========================= */
-
-function onScanFailure(error) {
-  // Ignore normal scanning failures
-}
+  window.open(url, "_blank");
 
 
-/* =========================
-   VERIFY TICKET
-========================= */
+  approved++;
 
-function verifyTicket(value) {
-
-  if (!value) {
-    return;
-  }
-
-  document.getElementById("status").innerText =
-    "Verifying ticket...";
-
-  showResult(
-    "invalid",
-    "CHECKING...",
-    "Please wait."
+  localStorage.setItem(
+    "fs_approved",
+    approved
   );
 
+  document.getElementById("approvedCount").textContent =
+    approved;
 
-  const callbackName =
-    "festsphereCallback_" +
-    Date.now();
-
-
-  window[callbackName] = function(data) {
-
-    try {
-
-      handleVerification(data);
-
-    } finally {
-
-      delete window[callbackName];
-
-      if (script && script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-
-    }
-
-  };
+  document.getElementById("status").textContent =
+    "TICKET SENT FOR VERIFICATION";
 
 
-  const script =
-    document.createElement("script");
-
-
-  script.src =
-    APPS_SCRIPT_URL +
-    "?action=staffRedeem" +
-    "&token=" +
-    encodeURIComponent(value) +
-    "&session=" +
-    encodeURIComponent(sessionToken) +
-    "&callback=" +
-    callbackName;
-
-
-  script.onerror = function() {
-
-    delete window[callbackName];
-
-    showResult(
-      "invalid",
-      "CONNECTION ERROR",
-      "Could not contact ticket server."
-    );
-
-  };
-
-
-  document.body.appendChild(script);
+  setTimeout(function() {
+    startCamera();
+  }, 1500);
 
 }
 
-
-/* =========================
-   HANDLE RESULT
-========================= */
-
-function handleVerification(data) {
-
-  if (!data) {
-
-    rejectedCount++;
-
-    updateStats();
-
-    showResult(
-      "invalid",
-      "INVALID RESPONSE",
-      "Server returned no response."
-    );
-
-    return;
-  }
-
-
-  if (data.ok && data.valid) {
-
-    approvedCount++;
-
-    updateStats();
-
-    showResult(
-      "valid",
-      "✓ ENTRY APPROVED",
-      data.name
-        ? "Ticket: " + data.ticketId +
-          "<br><br>Guest: " + escapeHtml(data.name)
-        : "Ticket is valid."
-    );
-
-    beep(true);
-
-    if (navigator.vibrate) {
-      navigator.vibrate(200);
-    }
-
-    document.getElementById("status").innerText =
-      "ENTRY APPROVED — Ready for next ticket";
-
-  }
-
-  else if (
-    data.status === "USED" ||
-    data.used
-  ) {
-
-    rejectedCount++;
-
-    updateStats();
-
-    showResult(
-      "used",
-      "✕ TICKET ALREADY USED",
-      data.message ||
-      "This ticket has already been redeemed."
-    );
-
-    beep(false);
-
-    if (navigator.vibrate) {
-      navigator.vibrate([150, 100, 150]);
-    }
-
-    document.getElementById("status").innerText =
-      "ENTRY DENIED — Ticket already used";
-
-  }
-
-  else {
-
-    rejectedCount++;
-
-    updateStats();
-
-    showResult(
-      "invalid",
-      "✕ ENTRY DENIED",
-      data.message ||
-      "Invalid ticket."
-    );
-
-    beep(false);
-
-    document.getElementById("status").innerText =
-      "ENTRY DENIED — Ready for next ticket";
-
-  }
-
-}
-
-
-/* =========================
-   MANUAL VERIFY
-========================= */
 
 function verifyManual() {
 
-  const value =
-    document
-      .getElementById("manualToken")
-      .value
-      .trim();
+  const input =
+    document.getElementById("tokenInput");
 
+  const value =
+    input.value.trim();
 
   if (!value) {
 
-    showResult(
-      "invalid",
-      "ENTER TICKET",
-      "Please enter a QR URL or token."
+    alert(
+      "Please paste the complete ticket QR URL."
     );
 
     return;
   }
 
+  if (
+    value.indexOf("http://") !== 0 &&
+    value.indexOf("https://") !== 0
+  ) {
 
-  verifyTicket(value);
-
-}
-
-
-/* =========================
-   RESULT UI
-========================= */
-
-function showResult(type, title, message) {
-
-  const box =
-    document.getElementById("result");
-
-  const titleBox =
-    document.getElementById("resultTitle");
-
-  const messageBox =
-    document.getElementById("resultMessage");
-
-
-  box.className = type;
-
-  titleBox.innerHTML = title;
-
-  messageBox.innerHTML = message;
-
-  box.style.display = "block";
-
-}
-
-
-/* =========================
-   STATS
-========================= */
-
-function updateStats() {
-
-  document.getElementById("approved").innerText =
-    approvedCount;
-
-  document.getElementById("rejected").innerText =
-    rejectedCount;
-
-}
-
-
-/* =========================
-   BEEP
-========================= */
-
-function beep(success) {
-
-  try {
-
-    const AudioContext =
-      window.AudioContext ||
-      window.webkitAudioContext;
-
-    const audio =
-      new AudioContext();
-
-    const oscillator =
-      audio.createOscillator();
-
-    const gain =
-      audio.createGain();
-
-
-    oscillator.connect(gain);
-
-    gain.connect(audio.destination);
-
-
-    oscillator.frequency.value =
-      success ? 900 : 250;
-
-    gain.gain.value = 0.15;
-
-    oscillator.start();
-
-    oscillator.stop(
-      audio.currentTime +
-      (success ? 0.15 : 0.3)
+    alert(
+      "Please paste the complete QR URL."
     );
 
+    return;
   }
 
-  catch (e) {}
+  window.open(value, "_blank");
 
-}
-
-
-/* =========================
-   LOGOUT
-========================= */
-
-function logout() {
-
-  const callbackName =
-    "logoutCallback_" +
-    Date.now();
-
-
-  window[callbackName] =
-    function(data) {
-
-      delete window[callbackName];
-
-      window.location.href = "about:blank";
-
-    };
-
-
-  const script =
-    document.createElement("script");
-
-
-  script.src =
-    APPS_SCRIPT_URL +
-    "?action=staffLogout" +
-    "&session=" +
-    encodeURIComponent(sessionToken) +
-    "&callback=" +
-    callbackName;
-
-
-  document.body.appendChild(script);
-
-}
-
-
-/* =========================
-   ESCAPE HTML
-========================= */
-
-function escapeHtml(text) {
-
-  const div =
-    document.createElement("div");
-
-  div.textContent =
-    text || "";
-
-  return div.innerHTML;
-
+  input.value = "";
 }
 
 </script>
