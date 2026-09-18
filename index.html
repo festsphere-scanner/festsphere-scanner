@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Festsphere Staff Scanner</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 5px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #aaa;
+      margin-bottom: 20px;
+    }
+
+    #reader {
+      width: 100%;
+      background: #000;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    button {
+      width: 100%;
+      padding: 15px;
+      margin-top: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .start {
+      background: #ffffff;
+      color: #111;
+    }
+
+    .manual {
+      margin-top: 20px;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid #444;
+      background: #222;
+      color: white;
+      font-size: 15px;
+    }
+
+    .verify {
+      background: #444;
+      color: white;
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 20px;
+      border-radius: 14px;
+      display: none;
+    }
+
+    .valid {
+      display: block !important;
+      background: #123d20;
+      border: 2px solid #24d45b;
+    }
+
+    .used {
+      display: block !important;
+      background: #421414;
+      border: 2px solid #ff4444;
+    }
+
+    .invalid {
+      display: block !important;
+      background: #3c3212;
+      border: 2px solid #ffc107;
+    }
+
+    .result-title {
+      font-size: 25px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .result-message {
+      font-size: 17px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .stat {
+      flex: 1;
+      background: #222;
+      padding: 15px;
+      border-radius: 12px;
+    }
+
+    .stat-number {
+      font-size: 25px;
+      font-weight: bold;
+    }
+
+    .stat-label {
+      color: #aaa;
+      font-size: 13px;
+      margin-top: 5px;
+    }
+
+    .logout {
+      background: #222;
+      color: #ff7777;
+      margin-top: 20px;
+    }
+
+    #status {
+      margin: 15px 0;
+      color: #aaa;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>FESTSPHERE</h1>
+  <div class="subtitle">Staff Ticket Scanner</div>
+
+  <div id="status">
+    Ready to scan
+  </div>
+
+  <div id="reader"></div>
+
+  <button class="start" onclick="startScanner()">
+    📷 START CAMERA
+  </button>
+
+  <div class="manual">
+
+    <input
+      id="manualToken"
+      type="text"
+      placeholder="Paste QR URL or ticket token"
+    >
+
+    <button class="verify" onclick="verifyManual()">
+      VERIFY MANUALLY
+    </button>
+
+  </div>
+
+  <div id="result">
+    <div id="resultTitle" class="result-title"></div>
+    <div id="resultMessage" class="result-message"></div>
+  </div>
+
+  <div class="stats">
+
+    <div class="stat">
+      <div id="approved" class="stat-number">0</div>
+      <div class="stat-label">APPROVED</div>
+    </div>
+
+    <div class="stat">
+      <div id="rejected" class="stat-number">0</div>
+      <div class="stat-label">REJECTED</div>
+    </div>
+
+  </div>
+
+  <button class="logout" onclick="logout()">
+    LOG OUT
+  </button>
+
+</div>
+
+
+<script>
+
+const APPS_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbxVxZMzGtZdLSWp5LBzMHw7aCfy8MtMCwtJzXKPjjKetj8gZhala5n00omoQYmI8eTbZA/exec";
+
+
+const params = new URLSearchParams(window.location.search);
+
+const sessionToken = params.get("session");
+
+
+let scanner = null;
+let scanning = false;
+
+let approvedCount = 0;
+let rejectedCount = 0;
+
+let lastScanned = "";
+let lastScanTime = 0;
+
+
+/* =========================
+   CHECK SESSION
+========================= */
+
+if (!sessionToken) {
+
+  document.getElementById("status").innerText =
+    "No staff session found.";
+
+}
+
+
+/* =========================
+   START CAMERA
+========================= */
+
+async function startScanner() {
+
+  if (!sessionToken) {
+
+    showResult(
+      "invalid",
+      "SESSION ERROR",
+      "Please login again."
+    );
+
+    return;
+  }
+
+  if (scanning) {
+    return;
+  }
+
+  document.getElementById("status").innerText =
+    "Starting camera...";
+
+  try {
+
+    scanner = new Html5Qrcode("reader");
+
+    await scanner.start(
+
+      {
+        facingMode: {
+          ideal: "environment"
+        }
+      },
+
+      {
+        fps: 10,
+
+        qrbox: {
+          width: 280,
+          height: 280
+        },
+
+        aspectRatio: 1.0
+
+      },
+
+      onScanSuccess,
+
+      onScanFailure
+
+    );
+
+    scanning = true;
+
+    document.getElementById("status").innerText =
+      "Camera active — scan ticket QR";
+
+  }
+
+  catch (error) {
+
+    console.error(error);
+
+    document.getElementById("status").innerText =
+      "Camera could not start.";
+
+    showResult(
+      "invalid",
+      "CAMERA ERROR",
+      "Allow camera permission and try again."
+    );
+
+  }
+
+}
+
+
+/* =========================
+   QR SUCCESS
+========================= */
+
+function onScanSuccess(decodedText) {
+
+  const now = Date.now();
+
+  /*
+    Prevent the same QR from being
+    submitted repeatedly within 3 seconds.
+  */
+
+  if (
+    decodedText === lastScanned &&
+    now - lastScanTime < 3000
+  ) {
+    return;
+  }
+
+  lastScanned = decodedText;
+  lastScanTime = now;
+
+  verifyTicket(decodedText);
+
+}
+
+
+/* =========================
+   QR FAILURE
+========================= */
+
+function onScanFailure(error) {
+  // Ignore normal scanning failures
+}
+
+
+/* =========================
+   VERIFY TICKET
+========================= */
+
+function verifyTicket(value) {
+
+  if (!value) {
+    return;
+  }
+
+  document.getElementById("status").innerText =
+    "Verifying ticket...";
+
+  showResult(
+    "invalid",
+    "CHECKING...",
+    "Please wait."
+  );
+
+
+  const callbackName =
+    "festsphereCallback_" +
+    Date.now();
+
+
+  window[callbackName] = function(data) {
+
+    try {
+
+      handleVerification(data);
+
+    } finally {
+
+      delete window[callbackName];
+
+      if (script && script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+    }
+
+  };
+
+
+  const script =
+    document.createElement("script");
+
+
+  script.src =
+    APPS_SCRIPT_URL +
+    "?action=staffRedeem" +
+    "&token=" +
+    encodeURIComponent(value) +
+    "&session=" +
+    encodeURIComponent(sessionToken) +
+    "&callback=" +
+    callbackName;
+
+
+  script.onerror = function() {
+
+    delete window[callbackName];
+
+    showResult(
+      "invalid",
+      "CONNECTION ERROR",
+      "Could not contact ticket server."
+    );
+
+  };
+
+
+  document.body.appendChild(script);
+
+}
+
+
+/* =========================
+   HANDLE RESULT
+========================= */
+
+function handleVerification(data) {
+
+  if (!data) {
+
+    rejectedCount++;
+
+    updateStats();
+
+    showResult(
+      "invalid",
+      "INVALID RESPONSE",
+      "Server returned no response."
+    );
+
+    return;
+  }
+
+
+  if (data.ok && data.valid) {
+
+    approvedCount++;
+
+    updateStats();
+
+    showResult(
+      "valid",
+      "✓ ENTRY APPROVED",
+      data.name
+        ? "Ticket: " + data.ticketId +
+          "<br><br>Guest: " + escapeHtml(data.name)
+        : "Ticket is valid."
+    );
+
+    beep(true);
+
+    if (navigator.vibrate) {
+      navigator.vibrate(200);
+    }
+
+    document.getElementById("status").innerText =
+      "ENTRY APPROVED — Ready for next ticket";
+
+  }
+
+  else if (
+    data.status === "USED" ||
+    data.used
+  ) {
+
+    rejectedCount++;
+
+    updateStats();
+
+    showResult(
+      "used",
+      "✕ TICKET ALREADY USED",
+      data.message ||
+      "This ticket has already been redeemed."
+    );
+
+    beep(false);
+
+    if (navigator.vibrate) {
+      navigator.vibrate([150, 100, 150]);
+    }
+
+    document.getElementById("status").innerText =
+      "ENTRY DENIED — Ticket already used";
+
+  }
+
+  else {
+
+    rejectedCount++;
+
+    updateStats();
+
+    showResult(
+      "invalid",
+      "✕ ENTRY DENIED",
+      data.message ||
+      "Invalid ticket."
+    );
+
+    beep(false);
+
+    document.getElementById("status").innerText =
+      "ENTRY DENIED — Ready for next ticket";
+
+  }
+
+}
+
+
+/* =========================
+   MANUAL VERIFY
+========================= */
+
+function verifyManual() {
+
+  const value =
+    document
+      .getElementById("manualToken")
+      .value
+      .trim();
+
+
+  if (!value) {
+
+    showResult(
+      "invalid",
+      "ENTER TICKET",
+      "Please enter a QR URL or token."
+    );
+
+    return;
+  }
+
+
+  verifyTicket(value);
+
+}
+
+
+/* =========================
+   RESULT UI
+========================= */
+
+function showResult(type, title, message) {
+
+  const box =
+    document.getElementById("result");
+
+  const titleBox =
+    document.getElementById("resultTitle");
+
+  const messageBox =
+    document.getElementById("resultMessage");
+
+
+  box.className = type;
+
+  titleBox.innerHTML = title;
+
+  messageBox.innerHTML = message;
+
+  box.style.display = "block";
+
+}
+
+
+/* =========================
+   STATS
+========================= */
+
+function updateStats() {
+
+  document.getElementById("approved").innerText =
+    approvedCount;
+
+  document.getElementById("rejected").innerText =
+    rejectedCount;
+
+}
+
+
+/* =========================
+   BEEP
+========================= */
+
+function beep(success) {
+
+  try {
+
+    const AudioContext =
+      window.AudioContext ||
+      window.webkitAudioContext;
+
+    const audio =
+      new AudioContext();
+
+    const oscillator =
+      audio.createOscillator();
+
+    const gain =
+      audio.createGain();
+
+
+    oscillator.connect(gain);
+
+    gain.connect(audio.destination);
+
+
+    oscillator.frequency.value =
+      success ? 900 : 250;
+
+    gain.gain.value = 0.15;
+
+    oscillator.start();
+
+    oscillator.stop(
+      audio.currentTime +
+      (success ? 0.15 : 0.3)
+    );
+
+  }
+
+  catch (e) {}
+
+}
+
+
+/* =========================
+   LOGOUT
+========================= */
+
+function logout() {
+
+  const callbackName =
+    "logoutCallback_" +
+    Date.now();
+
+
+  window[callbackName] =
+    function(data) {
+
+      delete window[callbackName];
+
+      window.location.href = "about:blank";
+
+    };
+
+
+  const script =
+    document.createElement("script");
+
+
+  script.src =
+    APPS_SCRIPT_URL +
+    "?action=staffLogout" +
+    "&session=" +
+    encodeURIComponent(sessionToken) +
+    "&callback=" +
+    callbackName;
+
+
+  document.body.appendChild(script);
+
+}
+
+
+/* =========================
+   ESCAPE HTML
+========================= */
+
+function escapeHtml(text) {
+
+  const div =
+    document.createElement("div");
+
+  div.textContent =
+    text || "";
+
+  return div.innerHTML;
+
+}
+
+</script>
+
+</body>
+</html>
