@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>FESTSPHERE Staff Scanner</title>
+
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #111;
+      color: white;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .header {
+      background: #7b1830;
+      padding: 22px 15px;
+      text-align: center;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: 1px;
+    }
+
+    .header p {
+      margin: 6px 0 0;
+      font-size: 13px;
+      opacity: .85;
+    }
+
+    .container {
+      max-width: 520px;
+      margin: auto;
+      padding: 20px 15px 40px;
+    }
+
+    .card {
+      background: #1d1d1d;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 15px;
+      box-shadow: 0 5px 25px rgba(0,0,0,.35);
+    }
+
+    #reader {
+      width: 100%;
+      overflow: hidden;
+      border-radius: 12px;
+      background: #000;
+    }
+
+    .status {
+      text-align: center;
+      margin: 15px 0;
+      font-size: 14px;
+      color: #ddd;
+    }
+
+    button {
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #8f2340;
+      color: white;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid #444;
+      background: #111;
+      color: white;
+      font-size: 15px;
+      outline: none;
+    }
+
+    .manual-title {
+      font-size: 15px;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+
+    .counters {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .counter {
+      text-align: center;
+      padding: 16px;
+      border-radius: 12px;
+      background: #292929;
+    }
+
+    .counter-number {
+      font-size: 30px;
+      font-weight: bold;
+    }
+
+    .counter-label {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    .approved {
+      color: #38d98a;
+    }
+
+    .rejected {
+      color: #ff5757;
+    }
+
+    .note {
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+      margin-top: 18px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="header">
+    <h1>FESTSPHERE</h1>
+    <p>Staff Ticket Scanner</p>
+  </div>
+
+  <div class="container">
+
+    <div class="card">
+
+      <div id="reader"></div>
+
+      <div class="status" id="status">
+        Camera ready — press START CAMERA
+      </div>
+
+      <button id="startBtn" onclick="startCamera()">
+        START CAMERA
+      </button>
+
+      <button
+        id="stopBtn"
+        onclick="stopCamera()"
+        style="display:none;">
+        STOP CAMERA
+      </button>
+
+    </div>
+
+    <div class="card">
+
+      <div class="manual-title">
+        Manual Ticket Token
+      </div>
+
+      <input
+        type="text"
+        id="tokenInput"
+        placeholder="Paste ticket QR URL">
+
+      <button onclick="verifyManual()">
+        VERIFY MANUALLY
+      </button>
+
+    </div>
+
+    <div class="card">
+
+      <div class="counters">
+
+        <div class="counter">
+          <div
+            class="counter-number approved"
+            id="approvedCount">
+            0
+          </div>
+
+          <div class="counter-label">
+            SCANNED
+          </div>
+        </div>
+
+        <div class="counter">
+          <div
+            class="counter-number rejected"
+            id="rejectedCount">
+            0
+          </div>
+
+          <div class="counter-label">
+            REJECTED / USED
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="note">
+      FESTSPHERE Official Staff Scanner
+    </div>
+
+  </div>
+
+
+<script>
+
+let scanner = null;
+let scanning = false;
+
+let approved = Number(
+  localStorage.getItem("fs_approved") || 0
+);
+
+let rejected = Number(
+  localStorage.getItem("fs_rejected") || 0
+);
+
+document.getElementById("approvedCount").textContent = approved;
+document.getElementById("rejectedCount").textContent = rejected;
+
+
+function startCamera() {
+
+  if (scanning) {
+    return;
+  }
+
+  scanner = new Html5Qrcode("reader");
+
+  const config = {
+    fps: 10,
+
+    qrbox: function(width, height) {
+
+      const size = Math.floor(
+        Math.min(width, height) * 0.75
+      );
+
+      return {
+        width: size,
+        height: size
+      };
+    },
+
+    aspectRatio: 1.0
+  };
+
+
+  scanner.start(
+    {
+      facingMode: "environment"
+    },
+
+    config,
+
+    function(decodedText) {
+
+      if (decodedText) {
+        handleScan(decodedText);
+      }
+
+    },
+
+    function(errorMessage) {
+      // Normal QR scanning errors are ignored.
+    }
+
+  ).then(function() {
+
+    scanning = true;
+
+    document.getElementById("status").textContent =
+      "CAMERA ACTIVE — Scan ticket QR";
+
+    document.getElementById("startBtn").style.display =
+      "none";
+
+    document.getElementById("stopBtn").style.display =
+      "block";
+
+  }).catch(function(error) {
+
+    console.error(error);
+
+    document.getElementById("status").textContent =
+      "CAMERA ERROR — Allow camera permission.";
+
+    alert(
+      "Camera could not start.\n\n" +
+      "Please allow camera permission and reload this page."
+    );
+
+  });
+}
+
+
+function stopCamera() {
+
+  if (!scanner || !scanning) {
+    return;
+  }
+
+  scanner.stop()
+    .then(function() {
+
+      scanning = false;
+
+      document.getElementById("status").textContent =
+        "Camera stopped";
+
+      document.getElementById("startBtn").style.display =
+        "block";
+
+      document.getElementById("stopBtn").style.display =
+        "none";
+
+    })
+    .catch(function(error) {
+
+      console.error(error);
+
+    });
+}
+
+
+function handleScan(decodedText) {
+
+  stopCamera();
+
+  const url = decodedText.trim();
+
+  if (
+    url.indexOf("action=scan") === -1 &&
+    url.indexOf("token=") === -1
+  ) {
+
+    rejected++;
+
+    localStorage.setItem(
+      "fs_rejected",
+      rejected
+    );
+
+    document.getElementById("rejectedCount").textContent =
+      rejected;
+
+    document.getElementById("status").textContent =
+      "INVALID QR";
+
+    setTimeout(function() {
+      startCamera();
+    }, 1800);
+
+    return;
+  }
+
+
+  /*
+    Open existing Apps Script verification page.
+    Scanner stays open in this tab.
+  */
+
+  window.open(url, "_blank");
+
+
+  approved++;
+
+  localStorage.setItem(
+    "fs_approved",
+    approved
+  );
+
+  document.getElementById("approvedCount").textContent =
+    approved;
+
+  document.getElementById("status").textContent =
+    "TICKET SENT FOR VERIFICATION";
+
+
+  setTimeout(function() {
+    startCamera();
+  }, 1500);
+
+}
+
+
+function verifyManual() {
+
+  const input =
+    document.getElementById("tokenInput");
+
+  const value =
+    input.value.trim();
+
+  if (!value) {
+
+    alert(
+      "Please paste the complete ticket QR URL."
+    );
+
+    return;
+  }
+
+  if (
+    value.indexOf("http://") !== 0 &&
+    value.indexOf("https://") !== 0
+  ) {
+
+    alert(
+      "Please paste the complete QR URL."
+    );
+
+    return;
+  }
+
+  window.open(value, "_blank");
+
+  input.value = "";
+}
+
+</script>
+
+</body>
+</html>
