@@ -13,11 +13,10 @@
   <title>FESTSPHERE Staff Scanner</title>
 
   <!-- QR SCANNER LIBRARY -->
-  <script
-    src="https://unpkg.com/html5-qrcode"
-    type="text/javascript">
-  </script>
-
+<script
+  src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
+  type="text/javascript">
+</script>
   <style>
 
     * {
@@ -1018,34 +1017,28 @@ function startCamera() {
     );
 
 
-  const config = {
+const config = {
 
-    fps: 10,
+  fps: 15,
 
-    qrbox:
-      function(
-        width,
-        height
-      ) {
+  qrbox: function(width, height) {
 
-        const size =
-          Math.floor(
-            Math.min(
-              width,
-              height
-            ) * 0.75
-          );
+    const size = Math.floor(
+      Math.min(width, height) * 0.60
+    );
 
+    return {
+      width: size,
+      height: size
+    };
 
-        return {
+  },
 
-          width: size,
+  aspectRatio: 1.0,
 
-          height: size
+  disableFlip: true
 
-        };
-
-      },
+};
 
     aspectRatio: 1.0
 
@@ -1786,17 +1779,14 @@ function restartCameraLater() {
 
       hideResult();
 
-
-      if (
-        sessionToken
-      ) {
+      if (sessionToken) {
 
         startCamera();
 
       }
 
     },
-    1800
+    700
   );
 
 }
